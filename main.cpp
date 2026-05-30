@@ -212,7 +212,7 @@ int main()
 
         // pause
         cin.ignore();
-
+        cout << "Basic setting completed. Current map size is " << WIDTH << " * " << HEIGHT  << ", wall density " << WALL_DENSITY << ".\n";
         cout << "Press Enter to start the game.";
         cin.get();
 
