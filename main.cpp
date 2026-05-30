@@ -1,10 +1,7 @@
 #include <bits/stdc++.h>
+#include "constants.h"
 
 using namespace std;
-
-const double WALL_DENSITY = 0.28; // generate map wall density
-const int WIDTH = 20, HEIGHT = 20;
-
 
 class Map
 {
@@ -87,14 +84,10 @@ public:
 };
 void OutbreakEngine::addInfected(Map& m, pair<int, int> point)
 {
-    if(m.getStatus(point.first, point.second) == 0)
+    if(m.isValid(point.first, point.second) && m.getStatus(point.first, point.second) == 0)
     {
         m.setStatus(point.first, point.second, 1);
         infectedQueue.push(point);
-    }
-    else
-    {
-        // not decided yet
     }
 }
 void OutbreakEngine::spread(Map& m)
@@ -144,35 +137,50 @@ public:
     }
 };
 
+void roundDisplay(int round)
+{
+    int digit = 0, r = round;
+    while(r != 0)
+    {
+        digit += 1;
+        r /= 10;
+    }
+
+    if(WIDTH > 3) for(int i=3+((digit-1)/2);i<WIDTH;i++) cout << "=";
+    cout << " Round " << round << " ";
+    if(WIDTH > 3) for(int i=3+((digit)/2);i<WIDTH;i++) cout << "=";
+    cout << "\n";
+
+}
+
 
 int main()
 {
     try
     {
-        vector<Map> levelPool;
-
-        // generate map pool (20 here)
-        for (int i = 0; i < 20; i++) {
-            levelPool.push_back(MapGenerator::generateRandom(WIDTH, HEIGHT, WALL_DENSITY));
+        cout << "Enter 1 to set map parameters, or enter other to use default settings.";
+        string command;
+        cin >> command;
+        system("cls");
+        if(command == "1")
+        {
+            cout << "Enter following parameters." << "\n";
+            cout << "Map width (integer): ";
+            cin >> WIDTH;
+            cout << "\n" << "Map height (integer): ";
+            cin >> HEIGHT;
+            cout << "\n" << "Map wall density (double): ";
+            cin >> WALL_DENSITY;
         }
 
-        // random take one
+        // generate map
+        Map myMap = MapGenerator::generateRandom(WIDTH, HEIGHT, WALL_DENSITY);
+        OutbreakEngine engine;
+
         static mt19937 gen(static_cast<unsigned int>(time(0)));
-        uniform_int_distribution<> dis(0, 19);
-
-        int selectedIndex = dis(gen);
-        Map myMap = levelPool[selectedIndex];
-
-        /*
-        can just random one here, but generate a pool to prepare for algorithm test
-        */
-
-        cout << "Selected Map Index: " << selectedIndex << endl;
 
         // set infection source
         // use normal distribution
-        OutbreakEngine engine;
-
         double meanX = (WIDTH - 1) / 2.0;
         double meanY = (HEIGHT - 1) / 2.0;
         double standardError = WIDTH / 5.0; // standard error value can be adjusted
@@ -193,7 +201,18 @@ int main()
         engine.addInfected(myMap, {startX, startY});
 
 
+
+        if(SOURCE_NEIGHBOR_WALL_REMOVE)
+        {
+            for(int i=0;i<4;i++)
+            {
+                if(myMap.isValid(startX+dx[i], startY+dy[i])) myMap.setStatus(startX+dx[i], startY+dy[i], 0);
+            }
+        }
+
         // pause
+        cin.ignore();
+
         cout << "Press Enter to start the game.";
         cin.get();
 
@@ -201,17 +220,17 @@ int main()
         int round = 1;
         while(true)
         {
-
             system("cls");
-
-            cout << "\n================ Round " << round << " ================" << endl;
+            cout << "\n  ";
+            roundDisplay(round);
             myMap.display();
 
             // place wall
             int wx, wy;
             cout << "Infected: " << myMap.infectedCount << " blocks" << endl;
             cout << "Enter wall coordinates (x y) or (-1 -1) to skip: ";
-            if(!(cin >> wx >> wy)) {
+            if(!(cin >> wx >> wy))
+            {
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 continue;
